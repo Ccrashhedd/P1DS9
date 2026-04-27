@@ -17,10 +17,10 @@ $errorConexion = $state['errorConexion'];
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tienda DS9</title>
-    <link rel="stylesheet" href="../Assets/CSS/app.css">
+    <link rel="stylesheet" href="../../../Styles/app.css">
 </head>
 <body>
-    <?php include __DIR__ . '/partials/header.php'; ?>
+    <?php include __DIR__ . '/../partials/header.php'; ?>
 
     <main class="page-shell">
         <?php if ($flashSuccess !== null): ?>
@@ -36,10 +36,10 @@ $errorConexion = $state['errorConexion'];
         <?php endif; ?>
 
         <?php
-        $viewFile = __DIR__ . '/views/' . $view . '.php';
+        $viewFile = __DIR__ . '/../Views/' . $view . '.php';
 
         if (!is_file($viewFile)) {
-            $viewFile = __DIR__ . '/views/catalogo.php';
+            $viewFile = __DIR__ . '/../Views/catalogo.php';
         }
 
         include $viewFile;
