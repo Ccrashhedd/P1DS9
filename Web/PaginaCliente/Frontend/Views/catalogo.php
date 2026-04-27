@@ -7,7 +7,6 @@ $productos = $state['catalog']['productos'];
 <section class="container hero-section">
     <div class="hero-card">
         <div>
-            <span class="badge-soft">Vista pública</span>
             <h2>Catálogo de productos</h2>
             <p>Los clientes pueden ver los productos disponibles mientras el personal autorizado entra por el acceso interno.</p>
         </div>
@@ -86,7 +85,7 @@ $productos = $state['catalog']['productos'];
                 <?php foreach ($productos as $producto): ?>
                     <?php
                     $imagen = trim((string) ($producto['imagen'] ?? ''));
-                    $src = $imagen !== '' ? '../img/productos/' . rawurlencode($imagen) : placeholderSvg((string) $producto['nombre']);
+                    $src = $imagen !== '' ? '../../../Assets/productos/' . rawurlencode($imagen) : placeholderSvg((string) $producto['nombre']);
                     $stock = (int) $producto['stock'];
                     ?>
                     <article class="product-card">
@@ -111,3 +110,12 @@ $productos = $state['catalog']['productos'];
         <?php endif; ?>
     </div>
 </section>
+
+<dialog>
+    <form method="dialog">
+        <h3>Producto agregado al carrito</h3>
+        <p>El producto se ha agregado correctamente al carrito de compras.</p>
+        <button class="btn btn-primary">Continuar comprando</button>
+        <button class="btn btn-ghost" formaction="?_action=go_carrito">Ir al carrito</button>
+    </form>
+</dialog>

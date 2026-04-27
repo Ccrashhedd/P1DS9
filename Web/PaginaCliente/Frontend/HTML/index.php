@@ -18,6 +18,7 @@ $errorConexion = $state['errorConexion'];
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tienda DS9</title>
     <link rel="stylesheet" href="../../../Styles/app.css">
+    <script src="/jquery-4.0.0.min.js"></script>
 </head>
 <body>
     <?php include __DIR__ . '/../partials/header.php'; ?>

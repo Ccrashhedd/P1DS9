@@ -5,9 +5,8 @@ $usuarioNombre = $usuarioNombre !== '' ? $usuarioNombre : ($currentUser['usuario
 <header class="topbar-wrap">
     <div class="topbar container">
         <div>
-            <span class="badge-soft">Proyecto DS9</span>
-            <h1>Tienda web y panel interno</h1>
-            <p>Catálogo público, acceso para empleados y administración desde una sola ruta.</p>
+            <h1>ElvisTech</h1>
+            <p>Todo en piezas baratas de computacion</p>
         </div>
 
         <div class="topbar-actions">
@@ -25,6 +24,10 @@ $usuarioNombre = $usuarioNombre !== '' ? $usuarioNombre : ($currentUser['usuario
                 <form method="post">
                     <input type="hidden" name="_action" value="go_productos">
                     <button type="submit" class="btn btn-light">Productos</button>
+                </form>
+                <form method="post">
+                    <input type="hidden" name="_action" value="go_carrito">
+                    <button type="submit" class="btn btn-light">Carrito</button>
                 </form>
 
                 <div class="user-chip">

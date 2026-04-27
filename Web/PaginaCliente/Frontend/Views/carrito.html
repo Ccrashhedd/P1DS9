@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+
+    <section>
+        <div class="container">
+            <h2>Carrito de compras</h2>
+            <p>Aquí se mostrarán los productos agregados al carrito.</p>
+            
+            <div class="carrito">
+                <div class="carrito-productos">
+                    <button class="btn btn-secondary">Vaciar carrito</button>
+                    <table>
+                        <thead>
+
+                        </thead>            
+                        <tbody>
+            
+                        </tbody>            
+                        <tfoot>
+
+                        </tfoot>            
+
+                        </tfoot>                        
+                    </table>
+                </div>
+
+                <div class="carrito-resumen">
+                    <form>
+                        <h3>Costo del pedido:</h3>
+                        <input type="text" placeholder="Subtotal" id="subtotal" name="subtotal" readonly>
+                        <input type="text" placeholder="ITBMS" id="impuestos" name="impuestos" readonly>
+                        <input type="text" placeholder="Total" id="total" name="total" readonly>
+                        <button class="btn btn-primary">Finalizar compra</button>
+                    </form>
+                    <button class="btn btn-light">Ver tarjetas</button>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <dialog>
+        <div class="modalContainer">
+            <h1>Pagar pedido</h1>
+            <input type="text" placeholder="Subtotal" id="subtotal" name="subtotal" readonly>
+            <input type="text" placeholder="ITBMS" id="impuestos" name="impuestos" readonly>
+            <input type="text" placeholder="Total" id="total" name="total" readonly>                        
+
+            <div class="lista objetos">
+
+            </div>
+
+            <div class="tarjetas">
+                
+            </div>
+
+        </div>
+    </dialog>
+    
+</body>
+</html>
