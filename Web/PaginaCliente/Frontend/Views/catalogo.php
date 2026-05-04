@@ -4,30 +4,10 @@ $categorias = $state['catalog']['categorias'];
 $marcas = $state['catalog']['marcas'];
 $productos = $state['catalog']['productos'];
 ?>
-<section class="container hero-section">
-    <div class="hero-card">
-        <div>
-            <h2>Catálogo de productos</h2>
-            <p>Los clientes pueden ver los productos disponibles mientras el personal autorizado entra por el acceso interno.</p>
-        </div>
-        <div class="stats-grid">
-            <div class="stat-box">
-                <strong><?= count($productos) ?></strong>
-                <span>Productos mostrados</span>
-            </div>
-            <div class="stat-box">
-                <strong><?= count($categorias) ?></strong>
-                <span>Categorías</span>
-            </div>
-            <div class="stat-box">
-                <strong><?= count($marcas) ?></strong>
-                <span>Marcas</span>
-            </div>
-        </div>
-    </div>
-</section>
+
 
 <section class="container catalog-layout">
+    
     <aside class="panel-card filter-card">
         <h3>Filtros</h3>
         <form method="post" class="stacked-form">
@@ -103,6 +83,12 @@ $productos = $state['catalog']['productos'];
                                     <?= $stock > 0 ? 'Stock: ' . $stock : 'Sin stock' ?>
                                 </span>
                             </div>
+                            <div class="product-actions">
+                                <button class="btn btn-primary btn-sm" <?= $stock > 0 ? '' : 'disabled' ?> onclick="addToCart(<?= (int) $producto['idProducto'] ?>, '<?= e((string) $producto['nombre']) ?>', <?= (float) $producto['precioVenta'] ?>)">Agregar al carrito</button>
+                                <input type="number" value="1"
+                                        min="1" step="1"
+                                        id="cantidadProducto-<?= (int) $producto['idProducto'] ?>" name="cantidadProducto-<?= (int) $producto['idProducto'] ?>">
+                            </div>
                         </div>
                     </article>
                 <?php endforeach; ?>
@@ -119,3 +105,13 @@ $productos = $state['catalog']['productos'];
         <button class="btn btn-ghost" formaction="?_action=go_carrito">Ir al carrito</button>
     </form>
 </dialog>
+
+<a class="cart-fab" href="?_action=go_carrito" aria-label="Ver carrito">
+    <span class="cart-fab-text">Carrito</span>
+    <span class="cart-fab-label" id="cart-floating-label">0 productos</span>
+    <span class="cart-fab-count" id="cart-floating-count" hidden>0</span>
+</a>
+
+<script src="../../../Backend/Js/producto_service.js">
+
+</script>

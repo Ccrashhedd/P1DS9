@@ -15,6 +15,11 @@ $usuarioNombre = $usuarioNombre !== '' ? $usuarioNombre : ($currentUser['usuario
                 <button type="submit" class="btn btn-light">Catálogo</button>
             </form>
 
+            <form method="post">
+                    <input type="hidden" name="_action" value="go_carrito">
+                    <button type="submit" class="btn btn-light">Carrito</button>
+            </form>
+
             <?php if ($currentUser): ?>
                 <form method="post">
                     <input type="hidden" name="_action" value="go_dashboard">
@@ -25,10 +30,7 @@ $usuarioNombre = $usuarioNombre !== '' ? $usuarioNombre : ($currentUser['usuario
                     <input type="hidden" name="_action" value="go_productos">
                     <button type="submit" class="btn btn-light">Productos</button>
                 </form>
-                <form method="post">
-                    <input type="hidden" name="_action" value="go_carrito">
-                    <button type="submit" class="btn btn-light">Carrito</button>
-                </form>
+                
 
                 <div class="user-chip">
                     <strong><?= e((string) $usuarioNombre) ?></strong>

@@ -367,6 +367,69 @@ button, input, select, textarea {
     color: #b42318;
 }
 
+.product-actions {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.product-actions input[type="number"] {
+    width: 84px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 10px;
+}
+
+.cart-fab {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 1000;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-2) 100%);
+    box-shadow: 0 12px 30px rgba(31, 59, 115, .28);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.cart-fab:hover {
+    transform: translateY(-1px);
+}
+
+.cart-fab-text {
+    opacity: .92;
+    font-size: 14px;
+}
+
+.cart-fab-label {
+    font-size: 13px;
+    opacity: .95;
+}
+
+.cart-fab-count {
+    min-width: 24px;
+    height: 24px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: #fff;
+    color: var(--primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.cart-fab-count[hidden] {
+    display: none;
+}
+
 .empty-card {
     padding: 24px;
 }
@@ -479,6 +542,124 @@ button, input, select, textarea {
     overflow-x: auto;
 }
 
+.carrito-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(280px, .8fr);
+    gap: 18px;
+    margin-top: 18px;
+    align-items: start;
+}
+
+.carrito-productos,
+.carrito-resumen {
+    padding: 22px;
+}
+
+.carrito-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.carrito-head h3 {
+    margin: 0;
+    color: var(--primary);
+}
+
+.carrito-lista-scroll {
+    max-height: 540px;
+    overflow-y: auto;
+    display: grid;
+    gap: 12px;
+    padding-right: 6px;
+}
+
+.carrito-item-card {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface-soft);
+    padding: 14px;
+    display: grid;
+    grid-template-columns: 80px minmax(0, 1fr) 90px 120px 120px;
+    gap: 10px;
+    align-items: center;
+}
+
+.item-col {
+    font-size: 14px;
+}
+
+.item-id {
+    color: var(--muted);
+    font-weight: 700;
+}
+
+.item-nombre {
+    color: var(--text);
+    font-weight: 700;
+}
+
+.item-cantidad {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.item-precio,
+.item-subtotal {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.item-subtotal {
+    color: var(--primary);
+    font-weight: 800;
+}
+
+.carrito-empty {
+    border: 1px dashed var(--border);
+    border-radius: 14px;
+    background: #fff;
+    color: var(--muted);
+    padding: 26px;
+    text-align: center;
+}
+
+.carrito-resumen h3 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    color: var(--primary);
+}
+
+.resumen-linea {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+}
+
+.resumen-linea span {
+    color: var(--muted);
+}
+
+.resumen-linea strong {
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+}
+
+.resumen-linea.total strong {
+    color: var(--primary);
+    font-size: 22px;
+}
+
+.carrito-resumen hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 8px 0;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
@@ -501,7 +682,8 @@ th {
     .catalog-layout,
     .auth-layout,
     .action-grid,
-    .panel-columns {
+    .panel-columns,
+    .carrito-layout {
         grid-template-columns: 1fr;
     }
 
@@ -537,5 +719,29 @@ th {
     .product-meta {
         flex-direction: column;
         align-items: flex-start;
+    }
+
+    .carrito-item-card {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .item-precio,
+    .item-subtotal {
+        text-align: left;
+    }
+
+    .product-actions {
+        flex-wrap: wrap;
+    }
+
+    .cart-fab {
+        right: 12px;
+        bottom: 12px;
+        padding: 10px 12px;
+        gap: 8px;
+    }
+
+    .cart-fab-text {
+        display: none;
     }
 }

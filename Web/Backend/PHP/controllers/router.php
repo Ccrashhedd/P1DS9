@@ -17,6 +17,8 @@ function handleRequest(): array
     try {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             handlePostAction();
+        } elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
+            handleGetAction();
         }
 
         return buildPageState();
@@ -24,6 +26,36 @@ function handleRequest(): array
         setFlash('flash_error', 'Ocurrió un problema al procesar la solicitud.');
 
         return buildPageState();
+    }
+}
+
+/**
+ * Procesa acciones GET simples para navegación.
+ *
+ * @return void
+ */
+function handleGetAction(): void
+{
+    $action = (string) ($_GET['_action'] ?? '');
+
+    switch ($action) {
+        case 'go_catalogo':
+            setCurrentView('catalogo');
+            break;
+        case 'go_login':
+            setCurrentView('login');
+            break;
+        case 'go_dashboard':
+            setCurrentView(isLoggedIn() ? 'dashboard' : 'login');
+            break;
+        case 'go_productos':
+            setCurrentView(isLoggedIn() ? 'productos_panel' : 'login');
+            break;
+        case 'go_carrito':
+            setCurrentView('carrito');
+            break;
+        default:
+            break;
     }
 }
 
@@ -59,6 +91,9 @@ function handlePostAction(): void
             } else {
                 setCurrentView('productos_panel');
             }
+            redirectToIndex();
+        case 'go_carrito':
+            setCurrentView('carrito');
             redirectToIndex();
         case 'catalog_filter':
             setCatalogFilters([
@@ -276,8 +311,10 @@ function buildPageState(): array
             'categorias' => [],
             'marcas' => [],
             'productos' => [],
-        ],
-    ];
+        ],        'carrito' => [
+            'items' => [],
+            'tarjetas' => [],
+        ],    ];
 
     if ($errorConexion === null) {
         try {
