@@ -1,0 +1,73 @@
+Guía de Instalación y Ejecución Local - Proyecto1
+Este proyecto consta de una aplicación Android (Kotlin/Jetpack Compose) y un backend en PHP con MySQL (XAMPP).
+
+1. Requisitos Previos
+Android Studio (Ladybug o superior recomendado).
+
+XAMPP (u otro servidor local con PHP 7.4+ y MySQL).
+
+Emulador de Android: Se recomienda encarecidamente utilizar un dispositivo virtual con API 33 (Tiramisu) para evitar bloqueos de red nativos de las versiones más recientes al usar IPs locales.
+
+2. Configuración del Servidor Local (Backend)
+Paso 1: Mover los archivos PHP
+
+Crea una ruta de carpetas en C:\xampp\htdocs\ que quede exactamente así: DS92026\P1DS9\APP\.
+
+Copia todos tus archivos PHP (get_productos.php, db_config.php, login_empleado.php, procesar_factura.php, etc.) dentro de esa carpeta final.
+
+Paso 2: Preparar la Base de Datos
+
+Abre phpMyAdmin (http://localhost/phpmyadmin).
+
+Crea una base de datos llamada ds9p1.
+
+Importa tu archivo SQL o crea las tablas necesarias (categoria, marca, productos, empleado, factura, factura_detalle, tarjeta).
+
+Paso 3: Configurar Imágenes
+
+Dentro de la carpeta APP/, crea una subcarpeta llamada img/.
+
+Coloca allí las imágenes de los productos para que la aplicación Android pueda consumirlas y renderizarlas.
+
+3. Configuración del Proyecto en Android Studio
+Paso 1: Abrir el Proyecto
+
+Abre Android Studio, selecciona Open y busca la carpeta raíz de Proyecto1.
+
+Paso 2: Sincronizar Gradle
+
+Espera a que Android Studio descargue las dependencias necesarias. Si aparece un banner de "Gradle Sync", haz clic en Sync Now y espera a que termine el proceso.
+
+Paso 3: Verificar la IP del Servidor
+
+Abre el archivo com.example.proyecto1.network.RetrofitClient.
+
+Asegúrate de que la URL base apunte a tu servidor local. Para el puente de red del emulador de Android Studio, la IP obligatoria es 10.0.2.2:
+
+Kotlin
+private const val BASE_URL = "http://10.0.2.2/DS92026/P1DS9/APP/"
+4. Ejecución
+Paso 1: Iniciar XAMPP
+
+Abre el Panel de Control de XAMPP e inicia los módulos Apache y MySQL.
+
+Paso 2: Correr la App
+
+Selecciona tu emulador (API 33) en la barra superior de Android Studio.
+
+Haz clic en el botón verde de Run (ícono de Play).
+
+Paso 3: Uso y Navegación
+
+Catálogo: Al iniciar, la App consumirá la base de datos local y mostrará los productos disponibles.
+
+Login / Roles: Dependiendo de las credenciales de la tabla empleado, la interfaz se adaptará para mostrar permisos de solo lectura o permisos de Administrador.
+
+Pagos: El sistema incluye validación de fondos simulada usando la tabla tarjeta.
+
+5. Solución de Problemas Comunes
+Error "SocketTimeoutException" / failed to connect a 10.0.2.2: Asegúrate de estar usando un emulador con API 33. Las API 34+ tienen reglas estrictas que bloquean el tráfico HTTP de texto plano en redes locales. Adicionalmente, verifica que la política network_security_config.xml esté correctamente vinculada en tu AndroidManifest.xml.
+
+JSON Error (Malformed JSON): Si la app se cierra al recibir datos, suele ser un error de PHP. Abre la ruta de tu archivo PHP directamente en el navegador de tu PC para verificar si hay errores de sintaxis impresos en pantalla.
+
+Conexión con Dispositivo Físico: Si usas un teléfono real conectado por cable, 10.0.2.2 no funcionará. Debes conectar el celular a la misma red Wi-Fi de tu computadora y cambiar el BASE_URL en Android Studio por la IPv4 real de tu máquina (Ej: 192.168.1.15).
