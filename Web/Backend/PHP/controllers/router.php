@@ -7,6 +7,7 @@ require_once __DIR__ . '/../services/catalog_service.php';
 require_once __DIR__ . '/../services/product_service.php';
 require_once __DIR__ . '/../services/carrito_service.php';
 require_once __DIR__ . '/../services/empleados_service.php';
+require_once __DIR__ . '/../services/admin_service.php';
 
 /**
  * Maneja una solicitud HTTP completa (GET o POST).
@@ -130,6 +131,21 @@ function handlePostAction(): void
         case 'guardar_producto':
             processGuardarProducto();
             redirectToIndex();
+        case 'actualizar_producto':
+            processActualizarProducto();
+            redirectToIndex();
+        case 'guardar_categoria':
+            processGuardarCategoria();
+            redirectToIndex();
+        case 'actualizar_categoria':
+            processActualizarCategoria();
+            redirectToIndex();
+        case 'guardar_marca':
+            processGuardarMarca();
+            redirectToIndex();
+        case 'actualizar_marca':
+            processActualizarMarca();
+            redirectToIndex();
         case 'guardar_empleado':
             processGuardarEmpleado();
             redirectToIndex();
@@ -219,6 +235,35 @@ function processGuardarProducto(): void
         'idMarca' => filter_var($_POST['idMarca'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]),
     ];
 
+    // Manejo de archivo subido (imagen)
+    $imagenFilename = '';
+    if (!empty($_FILES['imagenFile']['name']) && ($_FILES['imagenFile']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+        $uploadDir = __DIR__ . '/../../../Assets/productos';
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0755, true);
+        }
+
+        $tmp = $_FILES['imagenFile']['tmp_name'];
+        $orig = basename($_FILES['imagenFile']['name']);
+        $ext = strtolower(pathinfo($orig, PATHINFO_EXTENSION));
+        $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+        if (in_array($ext, $allowed, true)) {
+            $safeName = preg_replace('/[^A-Za-z0-9_-]/', '_', pathinfo($orig, PATHINFO_FILENAME));
+            $filename = $safeName . '_' . time() . '.' . $ext;
+            $dest = $uploadDir . '/' . $filename;
+            if (move_uploaded_file($tmp, $dest)) {
+                $imagenFilename = $filename;
+            }
+        }
+    }
+
+    if ($imagenFilename !== '') {
+        $data['imagen'] = $imagenFilename;
+    } else {
+        $data['imagen'] = trim((string) ($_POST['imagen'] ?? ''));
+    }
+
     if (
         $data['idProducto'] === '' ||
         !ctype_digit($data['idProducto']) ||
@@ -252,6 +297,96 @@ function processGuardarProducto(): void
         setFlash('flash_success', 'Producto agregado correctamente.');
     } catch (Throwable $e) {
         setFlash('flash_error', $e instanceof RuntimeException ? $e->getMessage() : 'No se pudo guardar el producto. Verifica la base de datos.');
+    }
+
+    setCurrentView('productos_panel');
+}
+
+function processActualizarProducto(): void
+{
+    if (!hasRole([1])) {
+        setFlash('flash_error', 'Solo el administrador puede actualizar productos.');
+        setCurrentView(isLoggedIn() ? 'dashboard' : 'login');
+        return;
+    }
+
+    error_log('processActualizarProducto POST: ' . print_r($_POST, true));
+
+    $data = [
+        'idProducto' => trim((string) ($_POST['idProducto'] ?? '')),
+        'nombre' => trim((string) ($_POST['nombre'] ?? '')),
+        'unidad' => trim((string) ($_POST['unidad'] ?? '')),
+        'descripcion' => trim((string) ($_POST['descripcion'] ?? '')),
+        'stock' => filter_var($_POST['stock'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]),
+        'precioCosto' => filter_var($_POST['precioCosto'] ?? null, FILTER_VALIDATE_FLOAT),
+        'precioVenta' => filter_var($_POST['precioVenta'] ?? null, FILTER_VALIDATE_FLOAT),
+        'imagen' => trim((string) ($_POST['imagen'] ?? '')),
+        'idCategoria' => filter_var($_POST['idCategoria'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]),
+        'idMarca' => filter_var($_POST['idMarca'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]),
+    ];
+
+    if (
+        $data['idProducto'] === '' ||
+        !ctype_digit($data['idProducto']) ||
+        $data['nombre'] === '' ||
+        $data['unidad'] === '' ||
+        $data['descripcion'] === '' ||
+        $data['stock'] === false ||
+        $data['precioCosto'] === false || (float) $data['precioCosto'] < 0 ||
+        $data['precioVenta'] === false || (float) $data['precioVenta'] < 0 ||
+        $data['idCategoria'] === false ||
+        $data['idMarca'] === false
+    ) {
+        setFlash('flash_error', 'Revisa los datos del producto. Hay campos vacíos o inválidos.');
+        setCurrentView('productos_panel');
+        return;
+    }
+
+    // Manejo de archivo subido (imagen) para actualización
+    $imagenFilename = '';
+    if (!empty($_FILES['imagenFile']['name']) && ($_FILES['imagenFile']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+        $uploadDir = __DIR__ . '/../../../Assets/productos';
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0755, true);
+        }
+
+        $tmp = $_FILES['imagenFile']['tmp_name'];
+        $orig = basename($_FILES['imagenFile']['name']);
+        $ext = strtolower(pathinfo($orig, PATHINFO_EXTENSION));
+        $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+        if (in_array($ext, $allowed, true)) {
+            $safeName = preg_replace('/[^A-Za-z0-9_-]/', '_', pathinfo($orig, PATHINFO_FILENAME));
+            $filename = $safeName . '_' . time() . '.' . $ext;
+            $dest = $uploadDir . '/' . $filename;
+            if (move_uploaded_file($tmp, $dest)) {
+                $imagenFilename = $filename;
+            }
+        }
+    }
+
+    if ($imagenFilename !== '') {
+        $data['imagen'] = $imagenFilename;
+    } else {
+        $data['imagen'] = trim((string) ($_POST['imagen'] ?? ''));
+    }
+
+    try {
+        actualizarProducto([
+            'idProducto' => $data['idProducto'],
+            'nombre' => $data['nombre'],
+            'unidad' => $data['unidad'],
+            'descripcion' => $data['descripcion'],
+            'stock' => (int) $data['stock'],
+            'precioCosto' => (float) $data['precioCosto'],
+            'precioVenta' => (float) $data['precioVenta'],
+            'imagen' => $data['imagen'],
+            'idCategoria' => (int) $data['idCategoria'],
+            'idMarca' => (int) $data['idMarca'],
+        ]);
+        setFlash('flash_success', 'Producto actualizado correctamente.');
+    } catch (Throwable $e) {
+        setFlash('flash_error', $e instanceof RuntimeException ? $e->getMessage() : 'No se pudo actualizar el producto.');
     }
 
     setCurrentView('productos_panel');
@@ -307,7 +442,7 @@ function processGuardarEmpleado(): void
  */
 function processActualizarStock(): void
 {
-    if (!hasRole([1, 2])) {
+    if (!hasRole([1])) {
         setFlash('flash_error', 'Debes iniciar sesión para actualizar stock.');
         setCurrentView(isLoggedIn() ? 'dashboard' : 'login');
         return;
@@ -332,6 +467,126 @@ function processActualizarStock(): void
     setCurrentView('productos_panel');
 }
 
+function processGuardarCategoria(): void
+{
+    if (!hasRole([1])) {
+        setFlash('flash_error', 'Solo el administrador puede gestionar categorías.');
+        setCurrentView(isLoggedIn() ? 'dashboard' : 'login');
+        return;
+    }
+
+    $nombre = trim((string) ($_POST['categoria'] ?? ''));
+
+    if ($nombre === '') {
+        setFlash('flash_error', 'Nombre de categoría vacío.');
+        setCurrentView('productos_panel');
+        return;
+    }
+
+    try {
+        $id = agregarCategoria($nombre);
+        if ($id > 0) {
+            setFlash('flash_success', 'Categoría agregada correctamente.');
+        } else {
+            setFlash('flash_error', 'No se pudo agregar la categoría.');
+        }
+    } catch (Throwable $e) {
+        setFlash('flash_error', 'Error al agregar categoría.');
+    }
+
+    setCurrentView('productos_panel');
+}
+
+function processActualizarCategoria(): void
+{
+    if (!hasRole([1])) {
+        setFlash('flash_error', 'Solo el administrador puede gestionar categorías.');
+        setCurrentView(isLoggedIn() ? 'dashboard' : 'login');
+        return;
+    }
+
+    $id = filter_var($_POST['idCategoria'] ?? null, FILTER_VALIDATE_INT);
+    $nombre = trim((string) ($_POST['categoria'] ?? ''));
+
+    if ($id === false || $id <= 0 || $nombre === '') {
+        setFlash('flash_error', 'Datos inválidos para actualizar categoría.');
+        setCurrentView('productos_panel');
+        return;
+    }
+
+    try {
+        if (actualizarCategoria((int)$id, $nombre)) {
+            setFlash('flash_success', 'Categoría actualizada correctamente.');
+        } else {
+            setFlash('flash_error', 'No se pudo actualizar la categoría.');
+        }
+    } catch (Throwable $e) {
+        setFlash('flash_error', 'Error al actualizar categoría.');
+    }
+
+    setCurrentView('productos_panel');
+}
+
+function processGuardarMarca(): void
+{
+    if (!hasRole([1])) {
+        setFlash('flash_error', 'Solo el administrador puede gestionar marcas.');
+        setCurrentView(isLoggedIn() ? 'dashboard' : 'login');
+        return;
+    }
+
+    $nombre = trim((string) ($_POST['marca'] ?? ''));
+
+    if ($nombre === '') {
+        setFlash('flash_error', 'Nombre de marca vacío.');
+        setCurrentView('productos_panel');
+        return;
+    }
+
+    try {
+        $id = agregarMarca($nombre);
+        if ($id > 0) {
+            setFlash('flash_success', 'Marca agregada correctamente.');
+        } else {
+            setFlash('flash_error', 'No se pudo agregar la marca.');
+        }
+    } catch (Throwable $e) {
+        setFlash('flash_error', 'Error al agregar marca.');
+    }
+
+    setCurrentView('productos_panel');
+}
+
+function processActualizarMarca(): void
+{
+    if (!hasRole([1])) {
+        setFlash('flash_error', 'Solo el administrador puede gestionar marcas.');
+        setCurrentView(isLoggedIn() ? 'dashboard' : 'login');
+        return;
+    }
+
+    $id = filter_var($_POST['idMarca'] ?? null, FILTER_VALIDATE_INT);
+    $nombre = trim((string) ($_POST['marca'] ?? ''));
+
+    if ($id === false || $id <= 0 || $nombre === '') {
+        setFlash('flash_error', 'Datos inválidos para actualizar marca.');
+        setCurrentView('productos_panel');
+        return;
+    }
+
+    try {
+        if (actualizarMarca((int)$id, $nombre)) {
+            setFlash('flash_success', 'Marca actualizada correctamente.');
+        } else {
+            setFlash('flash_error', 'No se pudo actualizar la marca.');
+        }
+    } catch (Throwable $e) {
+        setFlash('flash_error', 'Error al actualizar marca.');
+    }
+
+    setCurrentView('productos_panel');
+}
+
 /**
  * Procesa el pago del carrito.
  * Valida que el usuario esté logueado y procesa la transacción.
@@ -340,50 +595,159 @@ function processActualizarStock(): void
  */
 function processPagoCarrito(): void
 {
-    if (!isLoggedIn()) {
-        setFlash('flash_error', 'Debes iniciar sesión para realizar un pago.');
-        setCurrentView('login');
+    error_log('========== INICIO PAGO CARRITO ==========');
+
+    error_log('POST COMPLETO: ' . print_r($_POST, true));
+
+    $digitos = trim((string) ($_POST['digitos'] ?? ''));
+    $cvv = trim((string) ($_POST['cvv'] ?? ''));
+    $fecha = trim((string) ($_POST['fecha'] ?? ''));
+    $productosJson = (string) ($_POST['productos'] ?? '[]');
+
+    error_log('DIGITOS => ' . $digitos);
+    error_log('CVV => ' . $cvv);
+    error_log('FECHA => ' . $fecha);
+    error_log('PRODUCTOS JSON => ' . $productosJson);
+
+    if ($digitos === '') {
+
+        error_log('ERROR: DIGITOS VACIOS');
+
+        setFlash(
+            'flash_error',
+            'Debes ingresar los dígitos de la tarjeta.'
+        );
+
+        setCurrentView('carrito');
+
         return;
     }
 
-    $idTarjeta = filter_var($_POST['idTarjeta'] ?? null, FILTER_VALIDATE_INT);
-    $subtotal = filter_var($_POST['subtotal'] ?? null, FILTER_VALIDATE_FLOAT);
-    $itbms = filter_var($_POST['itbms'] ?? null, FILTER_VALIDATE_FLOAT);
-    $total = filter_var($_POST['total'] ?? null, FILTER_VALIDATE_FLOAT);
-    $productosJson = (string) ($_POST['productos'] ?? '[]');
+    if ($productosJson === '' || $productosJson === '[]') {
 
-    if ($idTarjeta === false || $subtotal === false || $itbms === false || $total === false) {
-        setFlash('flash_error', 'Los datos del pago no son válidos.');
+        error_log('ERROR: CARRITO VACIO');
+
+        setFlash(
+            'flash_error',
+            'El carrito está vacío.'
+        );
+
         setCurrentView('carrito');
+
         return;
     }
 
     try {
-        $productosSelect = json_decode($productosJson, true, 10, JSON_THROW_ON_ERROR);
+
+        $productosSelect = json_decode(
+            $productosJson,
+            true,
+            10,
+            JSON_THROW_ON_ERROR
+        );
+
         if (!is_array($productosSelect)) {
-            $productosSelect = [];
+
+            error_log('ERROR: JSON INVALIDO');
+
+            setFlash(
+                'flash_error',
+                'Error leyendo productos.'
+            );
+
+            setCurrentView('carrito');
+
+            return;
         }
+
     } catch (Throwable $e) {
-        setFlash('flash_error', 'Error al procesar los productos del carrito.');
+
+        error_log('ERROR JSON: ' . $e->getMessage());
+
+        setFlash(
+            'flash_error',
+            'Error procesando productos.'
+        );
+
         setCurrentView('carrito');
+
         return;
     }
 
-    $mensaje = pagoCarrito($productosSelect, [
-        'idTarjeta' => (int) $idTarjeta,
-        'subtotal' => (float) $subtotal,
-        'itbms' => (float) $itbms,
-        'total' => (float) $total,
-    ]);
+    try {
 
-    if (str_starts_with($mensaje, 'Pago realizado')) {
-        setFlash('flash_success', $mensaje);
-    } else {
-        setFlash('flash_error', $mensaje);
+        error_log('CREANDO TARJETA...');
+
+        $idTarjeta = ingresarTarjeta(
+            $digitos,
+            $cvv,
+            $fecha
+        );
+
+        error_log('ID TARJETA => ' . $idTarjeta);
+
+        if ($idTarjeta <= 0) {
+
+            error_log('ERROR: NO SE CREO LA TARJETA');
+
+            setFlash(
+                'flash_error',
+                'No se pudo registrar la tarjeta.'
+            );
+
+            setCurrentView('carrito');
+
+            return;
+        }
+
+        error_log('PROCESANDO PAGO...');
+
+        $mensaje = pagoCarrito(
+            $productosSelect,
+            [
+                'idTarjeta' => $idTarjeta
+            ]
+        );
+
+        error_log('RESPUESTA PAGO => ' . $mensaje);
+
+        if (str_starts_with($mensaje, 'Pago realizado')) {
+
+            setFlash(
+                'flash_success',
+                $mensaje
+            );
+
+        } else {
+
+            setFlash(
+                'flash_error',
+                $mensaje
+            );
+        }
+
+    } catch (Throwable $e) {
+
+        error_log('ERROR GENERAL PAGO: ' . $e->getMessage());
+
+        setFlash(
+            'flash_error',
+            'Error interno procesando el pago.'
+        );
     }
 
     setCurrentView('carrito');
+
+    error_log('========== FIN PAGO CARRITO ==========');
 }
+
+/**
+ * Procesa el ingreso de una nueva tarjeta desde el modal.
+ * Espera POST['digitos'] con los últimos dígitos de la tarjeta.
+ * Inserta la tarjeta y redirige al carrito.
+ *
+ * @return void
+ */
 
 /**
  * Construye el estado completo de la página.
@@ -451,7 +815,6 @@ function buildPageState(): array
                 $state['panel']['categorias'] = $state['catalog']['categorias'];
                 $state['panel']['marcas'] = $state['catalog']['marcas'];
                 $state['panel']['productos'] = getProductosPanel();
-                $state['carrito']['tarjetas'] = getTarjetas();
 
                 if ($view === 'empleados' && hasRole([1])) {
                     $state['empleados'] = obtenerEmpleados();

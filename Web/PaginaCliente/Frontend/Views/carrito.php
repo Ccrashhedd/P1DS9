@@ -1,3 +1,5 @@
+<?php ?>
+
 <section>
     <div class="container">
         <h2>Carrito de compras</h2>
@@ -38,7 +40,7 @@
                 </div>
 
                 <button class="btn btn-primary btn-full" id="btn-finalizar-compra" type="button">Finalizar compra</button>
-                
+
             </aside>
         </div>
     </div>
@@ -50,28 +52,53 @@
             <h3>Finalizar compra</h3>
             <button class="btn-close" id="btn-cerrar-modal" type="button" aria-label="Cerrar">×</button>
         </div>
-        
+
         <div class="containerTarjetas">
             <aside class="seccionTarjetas">
-                <h5>Seleccione tarjeta</h5>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Número de tarjeta</th>
-                            <th>Saldo</th>
-                            <th>Saldo Máximo</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabla-tarjetas">
-                        <tr>
-                            <td colspan="3" style="text-align: center; color: #667085;">Cargando tarjetas...</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <h5>Ingrese tarjeta de pago</h5>
+                <form id="formulario-tarjeta" onsubmit="return false;">
+                    <label for="input-digitos">Dígitos:</label>
+                    <input 
+                        type="text"
+                        id="input-digitos"
+                        name="digitos"
+                        maxlength="16"
+                        placeholder="Últimos dígitos"
+                        inputmode="numeric"
+                        pattern="\d{2,8}"
+                        >
+                    <label for="input-cvv">CVV</label>
+                    <input
+                        type="text"
+                        id="input-cvv"
+                        name="cvv"
+                        maxlength="4"
+                        placeholder="CVV"
+                        >
+                    <label for="input-fecha">Fecha de vencimiento</label>
+                    <input
+                        type="text"
+                        id="input-fecha"
+                        name="fecha"
+                        maxlength="5"
+                        placeholder="MM/AA"
+                        inputmode="numeric"
+                    >
+                    <div>
+                        <button class="btn btn-primary btn-sm" type="button" id="btn-llenar-digitos">Usar tarjeta ingresada</button>
+                        <button class="btn btn-ghost btn-sm" type="button" id="btn-limpiar-tarjeta">Limpiar</button>
+                    </div>
+                </form>
             </aside>
 
             <div class="seccionPago">
                 <form id="form-pago" method="post">
+                    <input type="hidden" name="_action" value="pago_carrito">
+                    <input type="hidden" name="idTarjeta" id="input-id-tarjeta" value="">
+                    <input type="hidden" name="subtotal" id="input-subtotal" value="0">
+                    <input type="hidden" name="itbms" id="input-itbms" value="0">
+                    <input type="hidden" name="total" id="input-total" value="0">
+                    <input type="hidden" name="productos" id="input-productos" value="[]">
                     <h4>Resumen del precio</h4>
                     <div class="resumen-linea-modal">
                         <span>Subtotal:</span>
@@ -95,4 +122,4 @@
 </dialog>
 
 <script src="../../../Backend/Js/input_service.js" defer></script>
-<script src="../../../Backend/Js/carrito_service.js" defer></script>
+<script src="../../../Backend/Js/carrito_service.js"></script>

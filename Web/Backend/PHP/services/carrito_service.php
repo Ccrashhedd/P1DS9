@@ -5,9 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config/app.php';
 
 /**
- * Obtiene los detalles de productos en el carrito desde la base de datos
- * @param array $productosSelect Array de [idProducto, cantidad, ...]
- * @return array Array de productos con detalles de BD
+ * Obtiene productos del carrito desde la BD
  */
 function getCarritoItems(array $productosSelect): array
 {
@@ -16,185 +14,395 @@ function getCarritoItems(array $productosSelect): array
     }
 
     try {
-        $ids = array_map(fn($item) => $item['idProducto'] ?? 0, $productosSelect);
-        $ids = array_filter($ids);
+
+        $ids = [];
+
+        foreach ($productosSelect as $item) {
+
+            $id = (int) ($item['idProducto'] ?? 0);
+
+            if ($id > 0) {
+                $ids[] = $id;
+            }
+        }
+
+        $ids = array_unique($ids);
 
         if (empty($ids)) {
             return [];
         }
 
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        $sql = "SELECT idProducto, nombre, precioVenta FROM productos WHERE idProducto IN ({$placeholders})";
+
+        $sql = "
+            SELECT
+                idProducto,
+                nombre,
+                precioVenta,
+                stock
+            FROM productos
+            WHERE idProducto IN ($placeholders)
+        ";
+
         $stmt = db()->prepare($sql);
+
         $stmt->execute($ids);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
+
+    } catch (Throwable $e) {
+
         return [];
     }
 }
 
 /**
- * Obtiene las tarjetas del usuario logueado
- * @return array Array de tarjetas
+ * Inserta una tarjeta nueva
  */
-function getTarjetas(): array
+function ingresarTarjeta(string $digitos, string $cvv, string $fecha): int
 {
-    try {
-        $sql = 'SELECT idTarjeta, tipo, digitos, saldo, saldoMaximo FROM tarjeta ORDER BY saldo DESC';
-        $stmt = db()->prepare($sql);
-        $stmt->execute();
+    $digitos = trim($digitos);
+    $cvv = trim($cvv);
+    $fecha = trim($fecha);
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        return [];
-    }
-}
+    // DEBUG
+    error_log('DIGITOS RECIBIDOS => ' . $digitos);
+    error_log('CVV RECIBIDO => ' . $cvv);
+    error_log('FECHA RECIBIDA => ' . $fecha);
 
-function getCantidadStock(array $productosSelect): array
-{
-    if (empty($productosSelect)) {
-        return [];
+    if ($digitos === '') {
+        return 0;
     }
 
     try {
-        $ids = array_map(fn($item) => $item['idProducto'] ?? 0, $productosSelect);
-        $ids = array_filter($ids);
 
-        if (empty($ids)) {
-            return [];
+        $pdo = db();
+
+        // Tipo random
+        $tipo = mt_rand(0, 1) ? 'credito' : 'debito';
+
+        // Saldo base
+        $saldo = 3000.00;
+
+        // Solo credito tiene saldo maximo
+        $saldoMaximo = null;
+
+        if ($tipo === 'credito') {
+
+            $saldoMaximo = mt_rand(2000, 10000);
         }
 
-        $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        $sql = "SELECT idProducto, stock FROM productos WHERE idProducto IN ({$placeholders})";
-        $stmt = db()->prepare($sql);
-        $stmt->execute($ids);
+        // Convertir MM/AA a YYYY-MM-01
+        $fechaMysql = null;
 
-        $result = [];
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $result[$row['idProducto']] = (int) $row['stock'];
+        if ($fecha !== '') {
+
+            $partes = explode('/', $fecha);
+
+            if (count($partes) === 2) {
+
+                $mes = trim($partes[0]);
+                $anio = trim($partes[1]);
+
+                if (
+                    ctype_digit($mes)
+                    && ctype_digit($anio)
+                ) {
+
+                    $mesNumero = (int) $mes;
+
+                    if ($mesNumero >= 1 && $mesNumero <= 12) {
+
+                        $mes = str_pad($mes, 2, '0', STR_PAD_LEFT);
+
+                        $fechaMysql = '20' . $anio . '-' . $mes . '-01';
+                    }
+                }
+            }
         }
-        return $result;
-    } catch (PDOException $e) {
-        return [];
+
+        $sql = "
+            INSERT INTO tarjeta (
+                tipo,
+                digitos,
+                codSeguridad,
+                fechaVence,
+                saldo,
+                saldoMaximo
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+        ";
+
+        $stmt = $pdo->prepare($sql);
+
+        $stmt->execute([
+            $tipo,
+            $digitos,
+            $cvv !== '' ? $cvv : null,
+            $fechaMysql,
+            $saldo,
+            $saldoMaximo
+        ]);
+
+        return (int) $pdo->lastInsertId();
+
+    } catch (Throwable $e) {
+
+        error_log('ERROR ingresarTarjeta => ' . $e->getMessage());
+
+        return 0;
     }
 }
 
 /**
- * Procesa el pago del carrito insertando factura y detalles
- * @param array $productosSelect Array de productos con cantidad
- * @param array $pagoData Array con idTarjeta, subtotal, itbms, total
- * @return string Mensaje de éxito o error
+ * Normaliza productos
  */
+function normalizarProductosPago(array $productosSelect): array
+{
+    $productosDb = getCarritoItems($productosSelect);
 
+    if (empty($productosDb)) {
+        return [];
+    }
+
+    $cantidades = [];
+
+    foreach ($productosSelect as $producto) {
+
+        $idProducto = (int) ($producto['idProducto'] ?? 0);
+
+        $cantidad = (int) ($producto['cantidad'] ?? 0);
+
+        if ($idProducto > 0 && $cantidad > 0) {
+
+            if (!isset($cantidades[$idProducto])) {
+                $cantidades[$idProducto] = 0;
+            }
+
+            $cantidades[$idProducto] += $cantidad;
+        }
+    }
+
+    $resultado = [];
+
+    foreach ($productosDb as $productoDb) {
+
+        $idProducto = (int) $productoDb['idProducto'];
+
+        if (!isset($cantidades[$idProducto])) {
+            continue;
+        }
+
+        $resultado[] = [
+            'idProducto' => $idProducto,
+            'nombre' => (string) $productoDb['nombre'],
+            'precioUnitario' => (float) $productoDb['precioVenta'],
+            'cantidad' => (int) $cantidades[$idProducto],
+            'stock' => (int) $productoDb['stock'],
+        ];
+    }
+
+    return $resultado;
+}
+
+/**
+ * Procesa el pago
+ */
 function pagoCarrito(array $productosSelect, array $pagoData): string
 {
-    //Validar si el carrito no esta vacio
+    $productos = normalizarProductosPago($productosSelect);
 
-    if (empty($productosSelect)) {
+    if (empty($productos)) {
         return 'El carrito esta vacio.';
     }
 
     $idTarjeta = (int) ($pagoData['idTarjeta'] ?? 0);
-    $subtotal = (float) ($pagoData['subtotal'] ?? 0);
-    $itbms = (float) ($pagoData['itbms'] ?? 0);
-    $total = (float) ($pagoData['total'] ?? 0);
 
     if ($idTarjeta <= 0) {
-        return 'Debe seleccionar una tarjeta válida para realizar el pago.';
+        return 'Tarjeta invalida.';
     }
 
-    // Validar que la cantidad no sobrepase la cantidad en stock
-    $cantidadStock = getCantidadStock($productosSelect);
-    $cantidadProducto = array_column($productosSelect, 'cantidad', 'idProducto');
-    /** @var array<int, int> $cantidadStock */
-    foreach ($cantidadStock as $idProducto => $stock) {
-        if (($cantidadProducto[$idProducto] ?? 0) > $stock) {
-            return "La cantidad del producto ID {$idProducto} excede el stock disponible.";
+    $subtotal = 0;
+
+    foreach ($productos as $producto) {
+
+        if ($producto['cantidad'] > $producto['stock']) {
+
+            return 'Stock insuficiente para el producto: ' . $producto['nombre'];
         }
+
+        $subtotal += (
+            $producto['cantidad']
+            * $producto['precioUnitario']
+        );
     }
+
+    $itbms = $subtotal * 0.07;
+
+    $total = $subtotal + $itbms;
 
     $pdo = db();
 
     try {
+
         $pdo->beginTransaction();
 
-        $stmtSaldo = $pdo->prepare('SELECT saldo FROM tarjeta WHERE idTarjeta = ? FOR UPDATE');
-        $stmtSaldo->execute([$idTarjeta]);
-        $saldoActual = $stmtSaldo->fetchColumn();
+        $sqlTarjeta = "
+            SELECT
+                idTarjeta,
+                tipo,
+                saldo,
+                saldoMaximo
+            FROM tarjeta
+            WHERE idTarjeta = ?
+            FOR UPDATE
+        ";
 
-        if ($saldoActual === false) {
+        $stmtTarjeta = $pdo->prepare($sqlTarjeta);
+
+        $stmtTarjeta->execute([$idTarjeta]);
+
+        $tarjeta = $stmtTarjeta->fetch(PDO::FETCH_ASSOC);
+
+        if (!$tarjeta) {
+
             $pdo->rollBack();
-            return 'La tarjeta seleccionada no existe.';
+
+            return 'La tarjeta no existe.';
         }
 
-        if ((float) $saldoActual < $total) {
-            $pdo->rollBack();
-            return 'La tarjeta no tiene saldo suficiente para completar el pago.';
+        $tipo = (string) $tarjeta['tipo'];
+
+        $saldo = (float) $tarjeta['saldo'];
+
+        $saldoMaximo = $tarjeta['saldoMaximo'] !== null
+            ? (float) $tarjeta['saldoMaximo']
+            : 0;
+
+        $saldoDisponible = $saldo;
+
+        if ($tipo === 'credito') {
+            $saldoDisponible += $saldoMaximo;
         }
 
-        $sql = 'INSERT INTO factura (idTarjeta, subtotal, itbms, total) VALUES (?, ?, ?, ?)';
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([
+        if ($saldoDisponible < $total) {
+
+            $pdo->rollBack();
+
+            return 'Saldo insuficiente.';
+        }
+
+        $nuevoSaldo = $saldo;
+
+        $nuevoSaldoMaximo = $saldoMaximo;
+
+        if ($total <= $saldo) {
+
+            $nuevoSaldo = $saldo - $total;
+
+        } else {
+
+            $restante = $total - $saldo;
+
+            $nuevoSaldo = 0;
+
+            if ($tipo === 'credito') {
+
+                $nuevoSaldoMaximo -= $restante;
+            }
+        }
+
+        // FACTURA
+        $sqlFactura = "
+            INSERT INTO factura (
+                idTarjeta,
+                subtotal,
+                itbms,
+                total
+            )
+            VALUES (?, ?, ?, ?)
+        ";
+
+        $stmtFactura = $pdo->prepare($sqlFactura);
+
+        $stmtFactura->execute([
             $idTarjeta,
             $subtotal,
             $itbms,
-            $total,
+            $total
         ]);
 
-        $facturaId = $pdo->lastInsertId();
+        $idFactura = (int) $pdo->lastInsertId();
 
-        $sqlDetalle = 'INSERT INTO factura_detalle (idFactura, idProducto, cantidad, precio_unitario) VALUES (?, ?, ?, ?)';
+        // DETALLES
+        $sqlDetalle = "
+            INSERT INTO factura_detalle (
+                idFactura,
+                idProducto,
+                cantidad,
+                precio_unitario
+            )
+            VALUES (?, ?, ?, ?)
+        ";
+
         $stmtDetalle = $pdo->prepare($sqlDetalle);
 
-        foreach ($productosSelect as $producto) {
+        foreach ($productos as $producto) {
+
             $stmtDetalle->execute([
-                (int) $facturaId,
-                (int) $producto['idProducto'],
-                (int) $producto['cantidad'],
-                (float) $producto['precioUnitario'] ?? 0,
+                $idFactura,
+                $producto['idProducto'],
+                $producto['cantidad'],
+                $producto['precioUnitario']
             ]);
         }
 
-        actualizarSaldoTarjeta($idTarjeta, $total);
-        actualizarProductoStock($productosSelect);
+        // DESCONTAR STOCK
+        $sqlStock = "
+            UPDATE productos
+            SET stock = stock - ?
+            WHERE idProducto = ?
+        ";
+
+        $stmtStock = $pdo->prepare($sqlStock);
+
+        foreach ($productos as $producto) {
+
+            $stmtStock->execute([
+                $producto['cantidad'],
+                $producto['idProducto']
+            ]);
+        }
+
+        // ACTUALIZAR TARJETA
+        $sqlUpdateTarjeta = "
+            UPDATE tarjeta
+            SET
+                saldo = ?,
+                saldoMaximo = ?
+            WHERE idTarjeta = ?
+        ";
+
+        $stmtUpdateTarjeta = $pdo->prepare($sqlUpdateTarjeta);
+
+        $stmtUpdateTarjeta->execute([
+            $nuevoSaldo,
+            $tipo === 'credito'
+                ? $nuevoSaldoMaximo
+                : null,
+            $idTarjeta
+        ]);
 
         $pdo->commit();
-        return 'Pago realizado con éxito. Número de factura: ' . $facturaId;
+
+        return 'Pago realizado con éxito. Factura #' . $idFactura;
+
     } catch (Throwable $e) {
+
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
+
         return 'Error al procesar el pago: ' . $e->getMessage();
     }
-}
-
-function actualizarProductoStock(array $productosSelect): void
-{
-    if (empty($productosSelect)) {
-        return;
-    }
-
-    $pdo = db();
-    $sql = 'UPDATE productos SET stock = stock - ? WHERE idProducto = ?';
-    $stmt = $pdo->prepare($sql);
-
-    foreach ($productosSelect as $producto) {
-        $stmt->execute([
-            (int) $producto['cantidad'],
-            (int) $producto['idProducto'],
-        ]);
-    }
-
-}
-
-function actualizarSaldoTarjeta(int $idTarjeta, float $monto): void
-{
-    $pdo = db();
-    $sql = 'UPDATE tarjeta SET saldo = saldo - ? WHERE idTarjeta = ?';
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute([
-        (float) $monto,
-        (int) $idTarjeta,
-    ]);
 }

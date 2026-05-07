@@ -94,6 +94,74 @@ function getProductosCatalogo(array $filters): array
             INNER JOIN categoria c ON c.idCategoria = p.idCategoria
             INNER JOIN marca m ON m.idMarca = p.idMarca
             WHERE 1=1
+            AND p.stock > 0
+        ';
+
+        $params = [];
+
+        $q = trim((string) ($filters['q'] ?? ''));
+        $categoria = (int) ($filters['categoria'] ?? 0);
+        $marca = (int) ($filters['marca'] ?? 0);
+
+        if ($q !== '') {
+            $sql .= ' AND (p.nombre LIKE ? OR p.descripcion LIKE ? OR CAST(p.idProducto AS CHAR) LIKE ?)';
+            $search = '%' . $q . '%';
+            $params[] = $search;
+            $params[] = $search;
+            $params[] = $search;
+        }
+
+        if ($categoria > 0) {
+            $sql .= ' AND p.idCategoria = ?';
+            $params[] = $categoria;
+        }
+
+        if ($marca > 0) {
+            $sql .= ' AND p.idMarca = ?';
+            $params[] = $marca;
+        }
+
+        $sql .= " ORDER BY {$orderBy}";
+
+        $stmt = db()->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+function getInventarioTotal(array $filters): array
+{
+    try {
+        $ordenesPermitidos = [
+            'nombre_asc' => 'p.nombre ASC',
+            'nombre_desc' => 'p.nombre DESC',
+            'precio_asc' => 'p.precioVenta ASC',
+            'precio_desc' => 'p.precioVenta DESC',
+            'stock_desc' => 'p.stock DESC',
+        ];
+
+        $orderBy = $ordenesPermitidos[$filters['orden'] ?? 'nombre_asc'] ?? $ordenesPermitidos['nombre_asc'];
+
+        $sql = '
+            SELECT
+                p.idProducto,
+                p.nombre,
+                p.unidad,
+                p.descripcion,
+                p.stock,
+                p.precioVenta,
+                p.imagen,
+                c.nombreCat AS categoria,
+                m.nombreMarc AS marca
+            FROM productos p
+            INNER JOIN categoria c ON c.idCategoria = p.idCategoria
+            INNER JOIN marca m ON m.idMarca = p.idMarca
+            WHERE 1=1
+            AND p.stock > 0
+            ORDER BY p.stock DESC
         ';
 
         $params = [];

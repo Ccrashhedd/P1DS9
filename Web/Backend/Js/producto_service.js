@@ -198,6 +198,31 @@ function inicializarBotonesAgregarCarrito() {
     });
 }
 
+function inicializarDialogCarrito() {
+    const dialog = document.querySelector("dialog");
+    if (!dialog) {
+        return;
+    }
+
+    const botonesDialog = dialog.querySelectorAll("button");
+    botonesDialog.forEach((boton) => {
+        boton.addEventListener("click", () => {
+            const formaction = boton.getAttribute("formaction");
+            if (formaction) {
+                setTimeout(() => {
+                    window.location.href = formaction;
+                }, 0);
+            }
+        });
+    });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    inicializarCarritoFlotante();
+    inicializarBotonesAgregarCarrito();
+    inicializarDialogCarrito();
+});
+
 function agregarProductoCarritoDesdeEvento(event) {
     const boton = event.currentTarget || event.target;
     const productoId = boton ? boton.getAttribute("data-producto-id") : null;

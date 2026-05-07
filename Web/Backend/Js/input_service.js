@@ -86,3 +86,47 @@ if (typeof window !== "undefined") {
     window.redondearNumero = redondearNumero;
 }
 
+function validarFechaTarjeta(event) {
+
+    const teclasPermitidas = [
+        "Backspace",
+        "Delete",
+        "Tab",
+        "ArrowLeft",
+        "ArrowRight",
+        "Home",
+        "End"
+    ];
+
+    if (teclasPermitidas.includes(event.key)) {
+        return;
+    }
+
+    if (!/^\d$/.test(event.key)) {
+        event.preventDefault();
+    }
+}
+
+function aplicarMascaraFecha(input) {
+
+    input.addEventListener("input", () => {
+
+        let valor = input.value.replace(/\D/g, "");
+
+        if (valor.length > 4) {
+            valor = valor.substring(0, 4);
+        }
+
+        if (valor.length >= 3) {
+            valor = valor.substring(0, 2) + "/" + valor.substring(2);
+        }
+
+        input.value = valor;
+    });
+}
+
+if (typeof window !== "undefined") {
+
+    window.validarFechaTarjeta = validarFechaTarjeta;
+    window.aplicarMascaraFecha = aplicarMascaraFecha;
+}

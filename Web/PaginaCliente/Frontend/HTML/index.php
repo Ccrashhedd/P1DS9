@@ -18,7 +18,7 @@ $errorConexion = $state['errorConexion'];
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tienda DS9</title>
     <link rel="stylesheet" href="../../../Styles/app.css">
-    <script src="/jquery-4.0.0.min.js"></script>
+    <script src="../../../../jquery-4.0.0.min.js"></script>
 </head>
 <body>
     <?php include __DIR__ . '/../partials/header.php'; ?>
@@ -26,6 +26,11 @@ $errorConexion = $state['errorConexion'];
     <main class="page-shell">
         <?php if ($flashSuccess !== null): ?>
             <div class="flash flash-success"><?= e($flashSuccess) ?></div>
+            <?php if (str_starts_with($flashSuccess, 'Pago realizado')): ?>
+                <script>
+                    localStorage.removeItem("carrito");
+                </script>
+            <?php endif; ?>
         <?php endif; ?>
 
         <?php if ($flashError !== null): ?>

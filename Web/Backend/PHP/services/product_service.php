@@ -11,7 +11,7 @@ function getProductosPanel(): array
 {
     try {
         $sql = '
-            SELECT p.idProducto, p.nombre, p.stock, p.precioCosto, p.precioVenta,
+            SELECT p.idProducto, p.nombre, p.unidad, p.descripcion, p.imagen, p.idCategoria, p.idMarca, p.stock, p.precioCosto, p.precioVenta,
                    c.nombreCat AS categoria, m.nombreMarc AS marca
             FROM productos p
             INNER JOIN categoria c ON c.idCategoria = p.idCategoria
@@ -74,5 +74,43 @@ function actualizarStockProducto(string $idProducto, int $stock): void
         $stmt->execute([$stock, $idProducto]);
     } catch (PDOException $e) {
         throw new RuntimeException('No se pudo actualizar el stock.');
+    }
+}
+
+/**
+ * Actualiza un producto existente
+ */
+function actualizarProducto(array $data): void
+{
+    try {
+        $fields = [
+            'nombre' => $data['nombre'],
+            'unidad' => $data['unidad'],
+            'descripcion' => $data['descripcion'],
+            'stock' => (int) $data['stock'],
+            'precioCosto' => (float) $data['precioCosto'],
+            'precioVenta' => (float) $data['precioVenta'],
+            'idCategoria' => (int) $data['idCategoria'],
+            'idMarca' => (int) $data['idMarca'],
+        ];
+
+        if (!empty($data['imagen'])) {
+            $fields['imagen'] = $data['imagen'];
+        }
+
+        $setParts = [];
+        $params = [];
+        foreach ($fields as $key => $val) {
+            $setParts[] = "$key = ?";
+            $params[] = $val;
+        }
+
+        $params[] = $data['idProducto'];
+
+        $sql = 'UPDATE productos SET ' . implode(', ', $setParts) . ' WHERE idProducto = ?';
+        $stmt = db()->prepare($sql);
+        $stmt->execute($params);
+    } catch (PDOException $e) {
+        throw new RuntimeException('No se pudo actualizar el producto.');
     }
 }

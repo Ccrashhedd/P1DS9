@@ -831,7 +831,7 @@ th {
     border: none;
     border-radius: var(--radius-lg);
     box-shadow: 0 24px 54px rgba(31, 59, 115, .22);
-    max-width: 900px;
+    max-width: 840px;
     width: 90%;
     max-height: 90vh;
     overflow-y: auto;
@@ -845,10 +845,10 @@ th {
 }
 
 .moduloContainer {
-    padding: 32px;
+    padding: 22px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 16px;
 }
 
 .modal-header {
@@ -888,21 +888,22 @@ th {
 
 .containerTarjetas {
     display: grid;
-    grid-template-columns: 1.2fr 1fr;
-    gap: 28px;
+    grid-template-columns: minmax(0, 1.45fr) minmax(260px, .8fr);
+    gap: 14px;
     align-items: start;
 }
 
 .seccionTarjetas {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 10px;
+    overflow-x: auto;
 }
 
 .seccionTarjetas h5 {
     margin: 0;
     color: var(--primary);
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 700;
 }
 
@@ -910,17 +911,109 @@ th {
     border: 1px solid var(--border);
     border-radius: 12px;
     overflow: hidden;
+    min-width: 0;
+    width: 100%;
+    table-layout: fixed;
 }
 
 .seccionTarjetas table th {
     background: var(--surface-soft);
-    padding: 12px;
-    font-size: 14px;
+    padding: 8px 6px;
+    font-size: 12px;
 }
 
 .seccionTarjetas table td {
-    padding: 12px;
-    font-size: 14px;
+    padding: 8px 6px;
+    font-size: 12px;
+}
+
+.seccionTarjetas table th:nth-child(1),
+.seccionTarjetas table td:nth-child(1) {
+    width: 38%;
+}
+
+.seccionTarjetas table th:nth-child(2),
+.seccionTarjetas table td:nth-child(2),
+.seccionTarjetas table th:nth-child(3),
+.seccionTarjetas table td:nth-child(3) {
+    width: 22%;
+}
+
+.seccionTarjetas table th:nth-child(4),
+.seccionTarjetas table td:nth-child(4) {
+    width: 18%;
+}
+
+.seccionTarjetas .js-row-card {
+    cursor: pointer;
+}
+
+.seccionTarjetas .js-row-card.is-selected {
+    background: #e7efff;
+    box-shadow: inset 0 0 0 2px rgba(49, 87, 168, .18);
+}
+
+.seccionTarjetas .js-row-card:focus {
+    outline: 3px solid rgba(49, 87, 168, .18);
+    outline-offset: -3px;
+}
+
+.seccionTarjetas .js-row-card.is-selected td {
+    background: #e7efff;
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.seccionTarjetas .js-row-card.is-selected td:first-child {
+    position: relative;
+}
+
+.seccionTarjetas .js-row-card.is-selected td:first-child::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--primary-2);
+}
+
+.seccionTarjetas .js-row-card td {
+    vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+}
+
+.seccionTarjetas .js-row-card td:last-child {
+    text-align: center;
+}
+
+.seccionTarjetas .js-select-card {
+    padding: 5px 8px;
+    font-size: 11px;
+}
+
+.seccionTarjetas .js-select-card.btn-primary {
+    box-shadow: 0 8px 18px rgba(31, 59, 115, .18);
+}
+
+.seccionPago form {
+    gap: 14px;
+}
+
+.seccionPago .resumen-linea-modal strong,
+.seccionPago .resumen-linea-modal span {
+    font-size: 13px;
+}
+
+.seccionPago .resumen-linea-modal.total strong {
+    font-size: 18px;
+}
+
+.resumen-linea-modal {
+    padding: 8px 0;
 }
 
 .seccionPago {
@@ -973,6 +1066,72 @@ th {
     margin: 0;
 }
 
+/* Estilos para el formulario de tarjeta */
+#formulario-tarjeta {
+    display: grid;
+    gap: 12px;
+}
+
+#formulario-tarjeta label {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 14px;
+}
+
+#formulario-tarjeta input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    background: #fff;
+    border-radius: 12px;
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    transition: .2s ease;
+}
+
+#formulario-tarjeta input:focus {
+    border-color: var(--primary-2);
+    box-shadow: 0 0 0 4px rgba(49, 87, 168, .12);
+}
+
+#formulario-tarjeta input::placeholder {
+    color: var(--muted);
+}
+
+#formulario-tarjeta > div {
+    display: flex;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+#formulario-tarjeta .btn {
+    flex: 1;
+}
+
+#formulario-tarjeta .btn-primary {
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(31, 59, 115, .18);
+}
+
+#formulario-tarjeta .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px rgba(31, 59, 115, .24);
+}
+
+#formulario-tarjeta .btn-ghost {
+    background: var(--surface-soft);
+    color: var(--primary);
+    border: 1px solid var(--border);
+}
+
+#formulario-tarjeta .btn-ghost:hover {
+    background: #f0f4fa;
+}
+
 @media (max-width: 768px) {
     .moduloPago {
         width: 95%;
@@ -987,6 +1146,10 @@ th {
     .containerTarjetas {
         grid-template-columns: 1fr;
         gap: 20px;
+    }
+
+    .seccionTarjetas {
+        overflow-x: auto;
     }
 
     .seccionTarjetas table {
