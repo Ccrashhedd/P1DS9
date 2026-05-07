@@ -67,8 +67,10 @@ $productos = $state['catalog']['productos'];
                     $imagen = trim((string) ($producto['imagen'] ?? ''));
                     $src = $imagen !== '' ? '../../../Assets/productos/' . rawurlencode($imagen) : placeholderSvg((string) $producto['nombre']);
                     $stock = (int) $producto['stock'];
+                    $nombreProducto = (string) $producto['nombre'];
+                    $precioVenta = (float) $producto['precioVenta'];
                     ?>
-                    <article class="product-card">
+                    <article class="product-card" data-producto-id="<?= (int) $producto['idProducto'] ?>" data-producto-nombre="<?= e($nombreProducto) ?>" data-producto-precio="<?= e((string) $precioVenta) ?>" data-producto-stock="<?= $stock ?>">
                         <div class="product-image-wrap">
                             <img src="<?= e($src) ?>" alt="<?= e((string) $producto['nombre']) ?>" onerror="this.src='<?= e(placeholderSvg((string) $producto['nombre'])) ?>'">
                         </div>
@@ -84,9 +86,19 @@ $productos = $state['catalog']['productos'];
                                 </span>
                             </div>
                             <div class="product-actions">
-                                <button class="btn btn-primary btn-sm" <?= $stock > 0 ? '' : 'disabled' ?> onclick="addToCart(<?= (int) $producto['idProducto'] ?>, '<?= e((string) $producto['nombre']) ?>', <?= (float) $producto['precioVenta'] ?>)">Agregar al carrito</button>
-                                <input type="number" value="1"
-                                        min="1" step="1"
+                                <button type="button" 
+                                        class="btn btn-primary btn-sm js-add-to-cart" 
+                                        data-producto-id="<?= (int) $producto['idProducto'] ?>" 
+                                        data-producto-nombre="<?= e($nombreProducto) ?>" 
+                                    data-producto-precio="<?= e((string) $precioVenta) ?>" 
+                                    data-producto-stock="<?= $stock ?>" <?= $stock <= 0 ? 'disabled' : '' ?>>Agregar al carrito</button>
+
+                                <input type="number"
+                                    value="<?= $stock > 0 ? '1' : '0' ?>"
+                                    min="<?= $stock > 0 ? '1' : '0' ?>"
+                                    max="<?= $stock ?>"
+                                    step="1"
+                                    <?= $stock <= 0 ? 'disabled' : '' ?>
                                         id="cantidadProducto-<?= (int) $producto['idProducto'] ?>" name="cantidadProducto-<?= (int) $producto['idProducto'] ?>">
                             </div>
                         </div>
@@ -112,6 +124,4 @@ $productos = $state['catalog']['productos'];
     <span class="cart-fab-count" id="cart-floating-count" hidden>0</span>
 </a>
 
-<script src="../../../Backend/Js/producto_service.js">
-
-</script>
+<script src="../../../Backend/Js/producto_service.js" defer></script>

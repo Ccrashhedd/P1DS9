@@ -37,94 +37,62 @@
                     <strong id="resumen-total">$0.00</strong>
                 </div>
 
-                <button class="btn btn-primary btn-full" type="button">Finalizar compra</button>
-                <button class="btn btn-light btn-full" type="button">Ver tarjetas</button>
+                <button class="btn btn-primary btn-full" id="btn-finalizar-compra" type="button">Finalizar compra</button>
+                
             </aside>
         </div>
     </div>
 </section>
 
-<script>
-"use strict";
+<dialog class="moduloPago" id="modal-pago">
+    <div class="moduloContainer">
+        <div class="modal-header">
+            <h3>Finalizar compra</h3>
+            <button class="btn-close" id="btn-cerrar-modal" type="button" aria-label="Cerrar">×</button>
+        </div>
+        
+        <div class="containerTarjetas">
+            <aside class="seccionTarjetas">
+                <h5>Seleccione tarjeta</h5>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Número de tarjeta</th>
+                            <th>Saldo</th>
+                            <th>Saldo Máximo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-tarjetas">
+                        <tr>
+                            <td colspan="3" style="text-align: center; color: #667085;">Cargando tarjetas...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </aside>
 
-const ITBMS = 0.07;
+            <div class="seccionPago">
+                <form id="form-pago" method="post">
+                    <h4>Resumen del precio</h4>
+                    <div class="resumen-linea-modal">
+                        <span>Subtotal:</span>
+                        <strong id="modal-subtotal">$0.00</strong>
+                    </div>
+                    <div class="resumen-linea-modal">
+                        <span>ITBMS (7%):</span>
+                        <strong id="modal-itbms">$0.00</strong>
+                    </div>
+                    <hr>
+                    <div class="resumen-linea-modal total">
+                        <span>Total:</span>
+                        <strong id="modal-total">$0.00</strong>
+                    </div>
+                    <button class="btn btn-primary btn-full" type="submit">Pagar</button>
+                    <button class="btn btn-ghost btn-full" id="btn-cancelar-modal" type="button">Cancelar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</dialog>
 
-function leerCarrito() {
-    const data = localStorage.getItem("carrito");
-    if (!data) {
-        return [];
-    }
-
-    try {
-        const parsed = JSON.parse(data);
-        if (!Array.isArray(parsed)) {
-            return [];
-        }
-
-        return parsed.map((item) => ({
-            idProducto: Number.parseInt(item.idProducto, 10),
-            cantidad: Number.parseInt(item.cantidad, 10),
-            nombre: typeof item.nombre === "string" && item.nombre.trim() !== ""
-                ? item.nombre
-                : "Producto #" + String(item.idProducto),
-            precioUnitario: Number.isFinite(Number(item.precioUnitario))
-                ? Number(item.precioUnitario)
-                : 0,
-        })).filter((item) => Number.isInteger(item.idProducto) && item.idProducto > 0 && Number.isInteger(item.cantidad) && item.cantidad > 0);
-    } catch (_error) {
-        return [];
-    }
-}
-
-function formatoDinero(valor) {
-    return "$" + valor.toFixed(2);
-}
-
-function renderizarCarrito() {
-    const items = leerCarrito();
-    const contenedor = document.getElementById("carrito-lista");
-
-    if (items.length === 0) {
-        contenedor.innerHTML = '<div class="carrito-empty">Tu carrito esta vacio.</div>';
-    } else {
-        contenedor.innerHTML = items.map((item) => {
-            const subtotal = item.cantidad * item.precioUnitario;
-
-            return `
-                <article class="carrito-item-card">
-                    <div class="item-col item-id">#${item.idProducto}</div>
-                    <div class="item-col item-nombre">${item.nombre}</div>
-                    <div class="item-col item-cantidad">x${item.cantidad}</div>
-                    <div class="item-col item-precio">${formatoDinero(item.precioUnitario)}</div>
-                    <div class="item-col item-subtotal">${formatoDinero(subtotal)}</div>
-                </article>
-            `;
-        }).join("");
-    }
-
-    const subtotal = items.reduce((sum, item) => sum + (item.cantidad * item.precioUnitario), 0);
-    const itbms = subtotal * ITBMS;
-    const total = subtotal + itbms;
-    const unidades = items.reduce((sum, item) => sum + item.cantidad, 0);
-
-    document.getElementById("resumen-productos").textContent = String(items.length);
-    document.getElementById("resumen-unidades").textContent = String(unidades);
-    document.getElementById("resumen-subtotal").textContent = formatoDinero(subtotal);
-    document.getElementById("resumen-itbms").textContent = formatoDinero(itbms);
-    document.getElementById("resumen-total").textContent = formatoDinero(total);
-}
-
-function vaciarCarrito() {
-    localStorage.setItem("carrito", JSON.stringify([]));
-    renderizarCarrito();
-}
-
-document.getElementById("btn-vaciar").addEventListener("click", vaciarCarrito);
-window.addEventListener("storage", (event) => {
-    if (event.key === "carrito") {
-        renderizarCarrito();
-    }
-});
-
-renderizarCarrito();
-</script>
+<script src="../../../Backend/Js/input_service.js" defer></script>
+<script src="../../../Backend/Js/carrito_service.js" defer></script>

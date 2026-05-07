@@ -5,6 +5,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../services/catalog_service.php';
 require_once __DIR__ . '/../services/product_service.php';
+require_once __DIR__ . '/../services/carrito_service.php';
+require_once __DIR__ . '/../services/empleados_service.php';
 
 /**
  * Maneja una solicitud HTTP completa (GET o POST).
@@ -51,6 +53,9 @@ function handleGetAction(): void
         case 'go_productos':
             setCurrentView(isLoggedIn() ? 'productos_panel' : 'login');
             break;
+        case 'go_empleados':
+            setCurrentView(hasRole([1]) ? 'empleados' : 'login');
+            break;
         case 'go_carrito':
             setCurrentView('carrito');
             break;
@@ -92,6 +97,14 @@ function handlePostAction(): void
                 setCurrentView('productos_panel');
             }
             redirectToIndex();
+        case 'go_empleados':
+            if (!hasRole([1])) {
+                setFlash('flash_error', 'Solo el administrador puede acceder al módulo de empleados.');
+                setCurrentView(isLoggedIn() ? 'dashboard' : 'login');
+            } else {
+                setCurrentView('empleados');
+            }
+            redirectToIndex();
         case 'go_carrito':
             setCurrentView('carrito');
             redirectToIndex();
@@ -117,8 +130,14 @@ function handlePostAction(): void
         case 'guardar_producto':
             processGuardarProducto();
             redirectToIndex();
+        case 'guardar_empleado':
+            processGuardarEmpleado();
+            redirectToIndex();
         case 'actualizar_stock':
             processActualizarStock();
+            redirectToIndex();
+        case 'pago_carrito':
+            processPagoCarrito();
             redirectToIndex();
         default:
             redirectToIndex();
@@ -239,6 +258,48 @@ function processGuardarProducto(): void
 }
 
 /**
+ * Procesa el alta de un empleado.
+ * Solo permite la acción al administrador.
+ *
+ * @return void
+ */
+function processGuardarEmpleado(): void
+{
+    if (!hasRole([1])) {
+        setFlash('flash_error', 'Solo el administrador puede agregar empleados.');
+        setCurrentView(isLoggedIn() ? 'dashboard' : 'login');
+        return;
+    }
+
+    $data = [
+        'nombre' => trim((string) ($_POST['nombre'] ?? '')),
+        'apellido' => trim((string) ($_POST['apellido'] ?? '')),
+        'usuario' => trim((string) ($_POST['usuario'] ?? '')),
+        'contrasena' => (string) ($_POST['contrasena'] ?? ''),
+        'rol' => filter_var($_POST['rol'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]),
+    ];
+
+    if ($data['nombre'] === '' || $data['apellido'] === '' || $data['usuario'] === '' || $data['contrasena'] === '' || $data['rol'] === false) {
+        setFlash('flash_error', 'Revisa los datos del empleado. Hay campos vacíos o inválidos.');
+        setCurrentView('empleados');
+        return;
+    }
+
+    try {
+        $mensaje = agregarEmpleado($data);
+        if (str_starts_with($mensaje, 'Empleado agregado')) {
+            setFlash('flash_success', $mensaje);
+        } else {
+            setFlash('flash_error', $mensaje);
+        }
+    } catch (Throwable $e) {
+        setFlash('flash_error', 'No se pudo guardar el empleado. Verifica la base de datos.');
+    }
+
+    setCurrentView('empleados');
+}
+
+/**
  * Procesa la actualización de stock de un producto.
  * Valida permisos de administrador o empleado.
  * 
@@ -272,6 +333,59 @@ function processActualizarStock(): void
 }
 
 /**
+ * Procesa el pago del carrito.
+ * Valida que el usuario esté logueado y procesa la transacción.
+ * 
+ * @return void
+ */
+function processPagoCarrito(): void
+{
+    if (!isLoggedIn()) {
+        setFlash('flash_error', 'Debes iniciar sesión para realizar un pago.');
+        setCurrentView('login');
+        return;
+    }
+
+    $idTarjeta = filter_var($_POST['idTarjeta'] ?? null, FILTER_VALIDATE_INT);
+    $subtotal = filter_var($_POST['subtotal'] ?? null, FILTER_VALIDATE_FLOAT);
+    $itbms = filter_var($_POST['itbms'] ?? null, FILTER_VALIDATE_FLOAT);
+    $total = filter_var($_POST['total'] ?? null, FILTER_VALIDATE_FLOAT);
+    $productosJson = (string) ($_POST['productos'] ?? '[]');
+
+    if ($idTarjeta === false || $subtotal === false || $itbms === false || $total === false) {
+        setFlash('flash_error', 'Los datos del pago no son válidos.');
+        setCurrentView('carrito');
+        return;
+    }
+
+    try {
+        $productosSelect = json_decode($productosJson, true, 10, JSON_THROW_ON_ERROR);
+        if (!is_array($productosSelect)) {
+            $productosSelect = [];
+        }
+    } catch (Throwable $e) {
+        setFlash('flash_error', 'Error al procesar los productos del carrito.');
+        setCurrentView('carrito');
+        return;
+    }
+
+    $mensaje = pagoCarrito($productosSelect, [
+        'idTarjeta' => (int) $idTarjeta,
+        'subtotal' => (float) $subtotal,
+        'itbms' => (float) $itbms,
+        'total' => (float) $total,
+    ]);
+
+    if (str_starts_with($mensaje, 'Pago realizado')) {
+        setFlash('flash_success', $mensaje);
+    } else {
+        setFlash('flash_error', $mensaje);
+    }
+
+    setCurrentView('carrito');
+}
+
+/**
  * Construye el estado completo de la página.
  * Incluye información de usuario, catálogo, panel administrativo y mensajes flash.
  * 
@@ -295,6 +409,14 @@ function buildPageState(): array
         setCurrentView('login');
     }
 
+    if (!hasRole([1]) && $view === 'empleados') {
+        $view = isLoggedIn() ? 'dashboard' : 'login';
+        setCurrentView($view);
+        if (!isLoggedIn()) {
+            setFlash('flash_error', 'Debes iniciar sesión para acceder al módulo de empleados.');
+        }
+    }
+
     $state = [
         'view' => $view,
         'errorConexion' => $errorConexion,
@@ -311,10 +433,13 @@ function buildPageState(): array
             'categorias' => [],
             'marcas' => [],
             'productos' => [],
-        ],        'carrito' => [
+        ],
+        'empleados' => [],
+        'carrito' => [
             'items' => [],
             'tarjetas' => [],
-        ],    ];
+        ],
+    ];
 
     if ($errorConexion === null) {
         try {
@@ -326,6 +451,11 @@ function buildPageState(): array
                 $state['panel']['categorias'] = $state['catalog']['categorias'];
                 $state['panel']['marcas'] = $state['catalog']['marcas'];
                 $state['panel']['productos'] = getProductosPanel();
+                $state['carrito']['tarjetas'] = getTarjetas();
+
+                if ($view === 'empleados' && hasRole([1])) {
+                    $state['empleados'] = obtenerEmpleados();
+                }
             }
         } catch (Throwable $e) {
             $state['errorConexion'] = 'No se pudo cargar la información desde la base de datos.';

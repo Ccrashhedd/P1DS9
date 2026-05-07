@@ -19,6 +19,7 @@ function cargarCarrito() {
                 cantidad: Number.parseInt(item.cantidad, 10),
                 nombre: typeof item.nombre === "string" ? item.nombre : "Producto #" + String(item.idProducto),
                 precioUnitario: Number.isFinite(Number(item.precioUnitario)) ? Number(item.precioUnitario) : 0,
+                stock: Number.isInteger(Number(item.stock)) ? Number(item.stock) : 0,
             }))
             .filter((item) => Number.isInteger(item.idProducto) && item.idProducto > 0 && Number.isInteger(item.cantidad) && item.cantidad > 0);
     } catch (_error) {
@@ -49,6 +50,9 @@ function agregarProductoCarrito(productoId, cantidad, extras) {
     const precioUnitario = extras && Number.isFinite(Number(extras.precioUnitario))
         ? Number(extras.precioUnitario)
         : 0;
+    const stock = extras && Number.isInteger(Number(extras.stock))
+        ? Number(extras.stock)
+        : 0;
 
     if (!Number.isInteger(id) || id <= 0) {
         throw new Error("productoId invalido");
@@ -68,12 +72,16 @@ function agregarProductoCarrito(productoId, cantidad, extras) {
         if (nombre) {
             existente.nombre = nombre;
         }
+        if (stock > 0) {
+            existente.stock = stock;
+        }
     } else {
         carrito.push({
             idProducto: id,
             cantidad: cant,
             nombre,
             precioUnitario,
+            stock,
         });
     }
 
@@ -120,16 +128,39 @@ function mostrarConfirmacionProducto(nombreProducto, cantidad) {
     dialog.showModal();
 }
 
-function addToCart(productoId, nombreProducto, precioUnitario) {
-    const cantidad = obtenerCantidadDesdeInput(productoId);
+function addToCart(productoId, nombreProducto, precioUnitario, stockDisponible) {
+    // 1. Obtener la cantidad que el usuario escribió en el input
+    const cantidadInput = Number.parseInt(obtenerCantidadDesdeInput(productoId), 10) || 1;
+    const id = Number.parseInt(productoId, 10);
+    const stock = Number.parseInt(stockDisponible, 10);
+    const tieneStockValido = Number.isInteger(stock) && stock >= 0;
 
+    // 2. Revisar si el producto ya está en el carrito para saber cuántos hay
+    const existente = carrito.find((item) => item.idProducto === id);
+    const cantidadEnCarrito = existente ? existente.cantidad : 0;
+
+    // 3. Validar: Lo que ya hay + lo que quiere agregar ¿supera el stock?
+    if (tieneStockValido && (cantidadEnCarrito + cantidadInput) > stock) {
+        let mensaje = "No hay suficiente stock. ";
+        if (cantidadEnCarrito > 0) {
+            mensaje += "Ya tienes " + cantidadEnCarrito + " unidad(es) de este producto en tu carrito y solo quedan " + stock + " disponibles en total.";
+        } else {
+            mensaje += "Solo quedan " + stock + " unidad(es) disponibles.";
+        }
+        
+        window.alert(mensaje);
+        return; // Detenemos la ejecución aquí para que no se agregue
+    }
+
+    // 4. Si pasa la validación, procedemos a agregar como siempre
     try {
-        agregarProductoCarrito(productoId, cantidad, {
+        agregarProductoCarrito(productoId, cantidadInput, {
             nombre: nombreProducto,
             precioUnitario,
+            stock: stock,
         });
         actualizarBadgeCarritoFlotante();
-        mostrarConfirmacionProducto(nombreProducto, cantidad);
+        mostrarConfirmacionProducto(nombreProducto, cantidadInput);
     } catch (error) {
         const mensaje = error instanceof Error ? error.message : "No se pudo agregar el producto.";
         window.alert(mensaje);
@@ -144,6 +175,26 @@ function inicializarCarritoFlotante() {
             carrito = cargarCarrito();
             actualizarBadgeCarritoFlotante();
         }
+    });
+}
+
+function inicializarBotonesAgregarCarrito() {
+    const botones = document.querySelectorAll(".js-add-to-cart");
+
+    botones.forEach((boton) => {
+        boton.addEventListener("click", () => {
+            const productoId = boton.getAttribute("data-producto-id");
+            const nombreProducto = boton.getAttribute("data-producto-nombre") || "Producto";
+            const precioUnitario = boton.getAttribute("data-producto-precio") || "0";
+            const stockDisponible = boton.getAttribute("data-producto-stock") || "0";
+
+            try {
+                addToCart(productoId, nombreProducto, precioUnitario, stockDisponible);
+            } catch (error) {
+                const mensaje = error instanceof Error ? error.message : "No se pudo agregar el producto.";
+                window.alert(mensaje);
+            }
+        });
     });
 }
 
@@ -178,10 +229,26 @@ if (typeof window !== "undefined") {
     window.agregarProductoCarritoDesdeEvento = agregarProductoCarritoDesdeEvento;
     window.limpiarCarrito = limpiarCarrito;
     window.addToCart = addToCart;
+    window.actualizarBadgeCarritoFlotante = actualizarBadgeCarritoFlotante;
 
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", inicializarCarritoFlotante);
+        document.addEventListener("DOMContentLoaded", inicializarBotonesAgregarCarrito);
     } else {
         inicializarCarritoFlotante();
+        inicializarBotonesAgregarCarrito();
     }
+}
+
+function validarSaldoTarjeta(saldoDisponible, saldoMaximo, montoCompra) {
+    const saldo = Number(saldoDisponible + saldoMaximo);
+    const monto = Number(montoCompra);
+    if (!Number.isFinite(saldo) || saldo < 0) {
+        throw new Error("Saldo disponible inválido");
+    }
+
+    if (!Number.isFinite(monto) || monto <= 0) {
+        throw new Error("Monto de compra inválido");
+    }
+
 }

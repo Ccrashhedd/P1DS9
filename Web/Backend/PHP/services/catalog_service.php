@@ -130,3 +130,6 @@ function getProductosCatalogo(array $filters): array
         return [];
     }
 }
+
+
+

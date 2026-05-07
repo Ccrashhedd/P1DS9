@@ -1,6 +1,8 @@
 <?php
+$currentUser = $currentUser ?? null;
 $usuarioNombre = trim((string) (($currentUser['nombre'] ?? '') . ' ' . ($currentUser['apellido'] ?? '')));
 $usuarioNombre = $usuarioNombre !== '' ? $usuarioNombre : ($currentUser['usuario'] ?? '');
+$rol = (int) ($currentUser['rol'] ?? 0);
 ?>
 <header class="topbar-wrap">
     <div class="topbar container">
@@ -30,6 +32,13 @@ $usuarioNombre = $usuarioNombre !== '' ? $usuarioNombre : ($currentUser['usuario
                     <input type="hidden" name="_action" value="go_productos">
                     <button type="submit" class="btn btn-light">Productos</button>
                 </form>
+
+                <?php if ($rol === 1): ?>
+                    <form method="post">
+                        <input type="hidden" name="_action" value="go_empleados">
+                        <button type="submit" class="btn btn-admin">Empleados</button>
+                    </form>
+                <?php endif; ?>
                 
 
                 <div class="user-chip">
